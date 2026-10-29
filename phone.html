@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex,nofollow">
@@ -26,7 +26,7 @@ body{overscroll-behavior:none}
 #pq .th{display:flex;gap:4px}
 #pq img{height:34px;border-radius:2px;border:1px solid var(--line2)}
 #tg.warn{background:#2a1618;border-left-color:var(--bad);color:var(--bad)}
-#st{padding:calc(6px + env(safe-area-inset-top)) 12px 6px;font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:8px;background:var(--top);border-bottom:4px solid var(--accent)}
+#st{padding:6px 12px;font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:8px;background:var(--top);border-bottom:4px solid var(--accent)}
 #st img{height:22px;width:22px;flex:none}
 #st .ttl{white-space:nowrap;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:15px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;line-height:1}
 #st .ttl{margin-right:8px}
@@ -38,10 +38,11 @@ body{overscroll-behavior:none}
 video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
 #msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:14px;line-height:1.5;color:var(--ink2)}
-#bar{padding:14px 12px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;background:var(--top)}
-#pqgo{display:none;width:100%;background:var(--accent);color:var(--accent-ink);border:0;border-radius:3px;padding:11px 6px;font:600 14px/1.15 'IBM Plex Sans','Segoe UI',system-ui,sans-serif}
+#bar{padding:10px 8px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;background:var(--top)}
+#pqgo{display:none;position:relative;width:60px;height:60px;padding:0;place-items:center;background:var(--accent);color:var(--accent-ink);border:0;border-radius:3px}
 #pqgo:active{background:#FFE55C}
-#pqgo small{display:block;font-weight:500;font-size:11.5px}
+#pqgo svg{width:30px;height:30px}
+#pqgo i{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--top);color:var(--yel);border:1px solid var(--yel);font:600 12px/18px 'IBM Plex Sans','Segoe UI',sans-serif;font-style:normal;text-align:center}
 #shut{width:76px;height:76px;border-radius:50%;border:5px solid var(--ink);background:var(--yel);cursor:pointer;padding:0}
 #shut:active{transform:scale(.94)}
 #shut:disabled{opacity:.45}
@@ -49,8 +50,8 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:var(--ink2);background:rgba(0,0,0,.55);word-break:break-all}
 #cnt{font-size:12px;color:var(--ink2);text-align:center}
 /* interface toujours en paysage : si le téléphone est tenu en portrait, elle est tournée de 90° */
-body{display:grid;grid-template-columns:1fr 124px;grid-template-rows:100%;height:100%}
-#main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg);padding-left:env(safe-area-inset-left)}
+body{display:grid;grid-template-columns:1fr 96px;grid-template-rows:100%;height:100%}
+#main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
 #bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
 @media (orientation:portrait){
   html,body{overflow:hidden}
@@ -91,9 +92,9 @@ function tgShow(){
 /* photos prises en attente : on enchaîne les prises sans attendre le PC, puis un seul envoi */
 const pq=[];
 function pqShow(){
-  const e=$('#pq'),g=$('#pqgo');e.style.display=pq.length?'flex':'none';g.style.display=pq.length?'block':'none';
+  const e=$('#pq'),g=$('#pqgo');e.style.display=pq.length?'flex':'none';g.style.display=pq.length?'grid':'none';
   if(!pq.length){e.innerHTML='';return}
-  g.innerHTML='Envoyer au PC<small>('+pq.length+' photo'+(pq.length>1?'s':'')+')</small>';
+  g.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg><i>'+pq.length+'</i>';g.title=g.ariaLabel='Envoyer au PC ('+pq.length+' photo'+(pq.length>1?'s':'')+')';
   e.innerHTML='<b>'+pq.length+' prête'+(pq.length>1?'s':'')+'</b><span class="th">'+pq.map(x=>'<img src="'+x.url+'" alt="">').join('')+'</span><button class="clr" id="pqno" type="button">Effacer</button>';
   $('#pqno').onclick=()=>{pq.splice(0).forEach(x=>URL.revokeObjectURL(x.url));pqShow()}
 }
@@ -220,5 +221,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-dbg('page','1.8.6');$('#ver').textContent='v1.8.6';cam();connect();
+dbg('page','1.8.7');$('#ver').textContent='v1.8.7';cam();connect();
 </script></body></html>
