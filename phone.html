@@ -18,7 +18,7 @@ body{overscroll-behavior:none}
 #tg .chk{display:flex;gap:14px;margin-top:8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 #tg .chk span{color:var(--ink2)}#tg .chk span.ok{color:var(--ok)}#tg .chk span.nx{color:var(--yel)}
 #tg .nav{display:flex;gap:8px;margin-top:10px}
-#tg .nav button,#pq .clr,#alt{flex:1;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:3px;padding:8px 6px;font:500 12.5px 'IBM Plex Sans','Segoe UI',system-ui,sans-serif}
+#tg .nav button,#pq .clr,#alt{flex:1;white-space:nowrap;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:3px;padding:8px 4px;font:500 12px 'IBM Plex Sans','Segoe UI',system-ui,sans-serif}
 #tg .nav button:active,#pq .clr:active,#alt:active{background:#262D36}
 #pq{display:none;margin:10px 10px 0;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:4px;font-size:12.5px}
 #pq b{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:15px;font-weight:600}
@@ -28,9 +28,9 @@ body{overscroll-behavior:none}
 #tg.warn{background:#2a1618;border-left-color:var(--bad);color:var(--bad)}
 #st{padding:calc(10px + env(safe-area-inset-top)) 12px 10px;font-size:13px;display:flex;align-items:center;gap:8px;background:var(--top);border-bottom:4px solid var(--accent)}
 #st img{height:22px;width:22px;flex:none}
-#st .ttl{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;line-height:1}
+#st .ttl{white-space:nowrap;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:15px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;line-height:1}
 #st .ttl b{color:var(--yel)}
-#st .ver{margin-left:auto;font-size:10.5px;color:var(--ink2);border:1px solid var(--line);border-radius:2px;padding:1px 5px}
+#st .ver{margin-left:auto;white-space:nowrap;font-size:10px;color:var(--ink2);border:1px solid var(--line);border-radius:2px;padding:1px 5px}
 #st2{display:flex;align-items:center;gap:8px;padding:8px 12px 0;font-size:12.5px;color:var(--ink2)}
 #dot{width:8px;height:8px;border-radius:50%;background:#8A919C;flex:none}
 #dot.ok{background:#3ECF6A}#dot.ko{background:var(--bad)}
@@ -49,7 +49,7 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:var(--ink2);background:rgba(0,0,0,.55);word-break:break-all}
 #cnt{font-size:12px;color:var(--ink2);text-align:center}
 /* interface toujours en paysage : si le téléphone est tenu en portrait, elle est tournée de 90° */
-body{display:grid;grid-template-columns:minmax(190px,30%) 1fr 124px;grid-template-rows:100%;height:100%}
+body{display:grid;grid-template-columns:minmax(230px,36%) 1fr 124px;grid-template-rows:100%;height:100%}
 #side{display:flex;flex-direction:column;overflow:auto;background:var(--panel);padding-left:env(safe-area-inset-left);padding-bottom:10px}
 #vw{grid-column:2}
 #bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
@@ -80,7 +80,7 @@ function msg(t){const m=$('#msg');m.textContent=t||'';m.style.display=t?'flex':'
 function tgShow(){
   const e=$('#tg');e.style.display=conn&&conn.open?'block':'none';
   const nav='<div class="nav"><button type="button" id="pvb">‹ Précédente</button><button type="button" id="nxb">Suivante ›</button></div>';
-  if(target.fin){e.className='';e.innerHTML='<b class="t">Phase terminée ✔</b><small>Choisissez une autre étape sur le PC</small>'+nav}
+  if(target.fin){e.className='';e.innerHTML='<b class="t">Phase terminée&nbsp;✔</b><small>Choisissez une autre étape sur le PC</small>'+nav}
   else if(target.rid){e.className='';
     const nx=!target.j?'j':!target.o?'o':'';
     e.innerHTML='<b class="t">'+esc(target.label)+'</b>'+(target.phase?'<small>'+esc(target.phase)+'</small>':'')
@@ -198,7 +198,7 @@ function connect(){
       if(d.t==='shoot')shoot(d.rid);
       else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
-      else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée ✔</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
+      else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée&nbsp;✔</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
     conn.on('close',lost);conn.on('error',lost);
   });
   peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost()});
@@ -223,5 +223,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-dbg('page','1.8.4');$('#ver').textContent='v1.8.4';cam();connect();
+dbg('page','1.8.5');$('#ver').textContent='v1.8.5';cam();connect();
 </script></body></html>
