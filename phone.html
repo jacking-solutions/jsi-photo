@@ -17,7 +17,9 @@
   color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-variant-numeric:tabular-nums}
-body{overscroll-behavior:none}
+/* l'interface est fixe ; la page est plus haute que l'écran, donc défilable : en balayant vers le haut, Chrome réduit sa barre */
+html{height:auto;min-height:calc(100vh + 200px);overscroll-behavior-y:contain}
+body{position:fixed;inset:0;height:auto}
 #tg{padding:6px 12px;background:var(--panel-2);color:var(--ink);font-size:13px;border-bottom:1px solid var(--line);border-left:4px solid var(--accent);display:none;align-items:center;flex-wrap:wrap;gap:2px 14px}
 #tg b.t{font-family:var(--f-display);font-size:17px;font-weight:600;line-height:1.15}
 #tg.none{border-left-color:var(--line-2)}
@@ -62,11 +64,10 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:var(--ink-2);background:rgba(0,0,0,.55);word-break:break-all}
 #cnt{font-size:12px;color:var(--ink-2);text-align:center}
 /* interface toujours en paysage : si le téléphone est tenu en portrait, elle est tournée de 90° */
-body{display:grid;grid-template-columns:1fr 96px;grid-template-rows:100%;height:100%}
+body{display:grid;grid-template-columns:1fr 96px;grid-template-rows:100%}
 #main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
 #bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
 @media (orientation:portrait){
-  html,body{overflow:hidden}
   body{position:fixed;top:0;left:0;width:100vh;height:100vw;width:100dvh;height:100dvw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg);transform:translateX(100dvw) rotate(90deg)}
 }
 </style></head><body>
@@ -237,5 +238,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-navIcons();dbg('page','1.8.8');$('#ver').textContent='v1.8.8';cam();connect();
+navIcons();dbg('page','1.8.9');$('#ver').textContent='v1.8.9';cam();connect();
 </script></body></html>
