@@ -122,7 +122,7 @@ async function send(b,rid){
   if(!b){status('Photo impossible','ko');return}
   if(!(conn&&conn.open)){status('PC non connecté','ko');return}
   const buf=await b.arrayBuffer();
-  conn.send({t:'photo',mime:'image/jpeg',buf,rid:(rid!=null&&rid!==''?rid:target.rid)||''});sent++;$('#cnt').textContent=sent+' photo'+(sent>1?'s':'');
+  conn.send({t:'photo',mime:'image/jpeg',buf,rid:(rid!=null&&rid!==''?rid:target.rid)||'',dbg:['page','img','cam'].map(k=>k+why[k]).join(' ')});sent++;$('#cnt').textContent=sent+' photo'+(sent>1?'s':'');
   const f=$('#flash');f.style.opacity=.85;setTimeout(()=>f.style.opacity=0,120);
   if(navigator.vibrate)navigator.vibrate(40);
 }
@@ -160,5 +160,5 @@ function lost(){
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
   status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
-dbg('page','1.7.7');cam();connect();
+dbg('page','1.7.8');cam();connect();
 </script></body></html>
