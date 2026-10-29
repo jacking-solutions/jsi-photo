@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex,nofollow">
 <title>Photo</title>
 <style>
@@ -199,14 +201,17 @@ function lost(){
   status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
 /* paysage imposé : verrouillage quand le navigateur le permet (Android) ; sinon l'interface est tournée par le CSS et l'aperçu caméra remis à l'endroit ici */
-async function lockLand(){try{if(screen.orientation&&screen.orientation.lock){await screen.orientation.lock('landscape')}}catch(e){
-  try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen){await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}}catch(e2){}}}
-lockLand();document.addEventListener('pointerdown',lockLand,{once:true});
+async function lockLand(){
+  /* plein écran (Android / Chrome ; absent sur iPhone) puis verrouillage en paysage */
+  try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)await d.requestFullscreen({navigationUI:'hide'})}catch(e){}
+  try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(e){}
+}
+document.addEventListener('pointerdown',lockLand,{once:true});
 function fitVideo(){
   const v=$('#v'),w=$('#vw');
   if(matchMedia('(orientation:portrait)').matches)v.style.cssText='position:absolute;left:50%;top:50%;width:'+w.clientHeight+'px;height:'+w.clientWidth+'px;transform:translate(-50%,-50%) rotate(-90deg)';
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-dbg('page','1.8.2');cam();connect();
+dbg('page','1.8.3');cam();connect();
 </script></body></html>
