@@ -64,18 +64,19 @@ async function fileBlob(f){
   c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
   return new Promise(ok=>c.toBlob(ok,'image/jpeg',Q));
 }
-async function send(b){
+async function send(b,rid){
   if(!b){status('Photo impossible','ko');return}
   if(!(conn&&conn.open)){status('PC non connecté','ko');return}
   const buf=await b.arrayBuffer();
-  conn.send({t:'photo',mime:'image/jpeg',buf});sent++;$('#cnt').textContent=sent+' photo'+(sent>1?'s':'');
+  conn.send({t:'photo',mime:'image/jpeg',buf,rid:rid||''});sent++;$('#cnt').textContent=sent+' photo'+(sent>1?'s':'');
   const f=$('#flash');f.style.opacity=.85;setTimeout(()=>f.style.opacity=0,120);
   if(navigator.vibrate)navigator.vibrate(40);
 }
-async function shoot(){const b=await frameBlob();if(b)return send(b);if(!$('#alt').hidden)$('#fi').click()}
-$('#shut').onclick=shoot;
+let pend='';
+async function shoot(rid){pend=rid||'';const b=await frameBlob();if(b)return send(b,pend);if(!$('#alt').hidden)$('#fi').click()}
+$('#shut').onclick=()=>shoot('');
 $('#alt').onclick=()=>$('#fi').click();
-$('#fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f)send(await fileBlob(f))};
+$('#fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f)send(await fileBlob(f),pend)};
 
 function connect(){
   if(!id){status('Lien invalide : scannez à nouveau le QR code','ko');return}
@@ -89,12 +90,12 @@ function connect(){
     const pc=conn.peerConnection;if(pc){pc.addEventListener('iceconnectionstatechange',()=>dbg('ice',pc.iceConnectionState));
       const n={host:0,srflx:0,relay:0};pc.addEventListener('icecandidate',e=>{const c=e.candidate;if(!c)return;n[c.type]=(n[c.type]||0)+1;dbg('cand','h'+n.host+' s'+n.srflx+' r'+n.relay+(/\.local/.test(c.address||c.candidate)?' mdns':''))})}
     conn.on('open',()=>{clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
-    conn.on('data',d=>{if(d&&d.t==='shoot')shoot()});
+    conn.on('data',d=>{if(d&&d.t==='shoot')shoot(d.rid)});
     conn.on('close',lost);conn.on('error',lost);
   });
   peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,3000)}else lost()});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
 function lost(){ready();status('Connexion perdue, nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,2500)}
-dbg('page','1.6.2');cam();connect();
+dbg('page','1.7.0');cam();connect();
 </script></body></html>
