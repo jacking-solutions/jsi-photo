@@ -6,7 +6,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#0c0d0f;color:#f2f3f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-body{display:flex;flex-direction:column;overscroll-behavior:none}
+body{overscroll-behavior:none}
 #tg{padding:8px 14px;background:#10331f;color:#c9f5d9;font-size:15px;font-weight:600;border-bottom:1px solid #1f6b3e;display:none}
 #tg.none{background:#2a2410;color:#f5e3a4;border-color:#6b5a1f;font-weight:500}
 #tg small{display:block;font-weight:400;opacity:.8;font-size:12px}
@@ -30,29 +30,26 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #bar{padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;background:#16181c}
 #pqgo{display:none;width:100%;background:#3ecf6a;color:#06210f;border:0;border-radius:8px;padding:12px 6px;font-weight:700;font-size:15px;line-height:1.15}
 #pqgo small{display:block;font-weight:600;font-size:12px}
-#rot{display:none;position:fixed;inset:0;z-index:9;background:#0c0d0f;color:#f2f3f5;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:18px;line-height:1.5}
-#rot b{display:block;font-size:46px;margin-bottom:10px}
-@media (orientation:portrait){#rot{display:flex}}
 #shut{width:76px;height:76px;border-radius:50%;border:5px solid #f2f3f5;background:#ffd21f;cursor:pointer;padding:0}
 #shut:active{transform:scale(.94)}
 #shut:disabled{opacity:.35}
 #alt{background:none;border:1px solid #3a3e46;color:#c6cad1;border-radius:6px;padding:9px 12px;font-size:13px}
 #dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:#9aa0a9;background:rgba(0,0,0,.55);word-break:break-all}
 #cnt{font-size:13px;color:#9aa0a9;min-width:70px;text-align:center}
-#side{display:contents}
-/* paysage : vidéo en grand au centre, infos à gauche, déclencheur à droite */
-@media (orientation:landscape) and (max-height:560px){
-  body{display:grid;grid-template-columns:minmax(190px,30%) 1fr 124px;grid-template-rows:100%;height:100%}
-  #side{display:flex;flex-direction:column;overflow:auto;background:#16181c;padding-left:env(safe-area-inset-left)}
-  #st{padding-top:10px}
-  #vw{grid-column:2}
-  #bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
+/* interface toujours en paysage : si le téléphone est tenu en portrait, elle est tournée de 90° */
+body{display:grid;grid-template-columns:minmax(190px,30%) 1fr 124px;grid-template-rows:100%;height:100%}
+#side{display:flex;flex-direction:column;overflow:auto;background:#16181c;padding-left:env(safe-area-inset-left)}
+#st{padding-top:10px}
+#vw{grid-column:2}
+#bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
+@media (orientation:portrait){
+  html,body{overflow:hidden}
+  body{position:fixed;top:0;left:0;width:100vh;height:100vw;width:100dvh;height:100dvw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg);transform:translateX(100dvw) rotate(90deg)}
 }
 </style></head><body>
 <div id="side"><div id="st"><span id="dot"></span><span id="stt">Connexion…</span></div>
 <div id="tg"></div><div id="pq"></div></div>
 <div id="vw"><video id="v" playsinline muted autoplay></video><div id="flash"></div><div id="dbg"></div><div id="msg">Ouverture de l’appareil photo…</div></div>
-<div id="rot"><div><b>⟳</b>Tournez le téléphone en mode paysage</div></div>
 <div id="bar"><button id="pqgo" type="button"></button><button id="alt" type="button" hidden>Appareil photo du téléphone</button><button id="shut" type="button" aria-label="Prendre la photo" disabled></button><span id="cnt"></span></div>
 <input id="fi" type="file" accept="image/*" capture="environment" hidden>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -201,9 +198,15 @@ function lost(){
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
   status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
-/* paysage imposé : verrouillage quand le navigateur le permet (Android), sinon un écran demande de tourner le téléphone */
+/* paysage imposé : verrouillage quand le navigateur le permet (Android) ; sinon l'interface est tournée par le CSS et l'aperçu caméra remis à l'endroit ici */
 async function lockLand(){try{if(screen.orientation&&screen.orientation.lock){await screen.orientation.lock('landscape')}}catch(e){
   try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen){await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}}catch(e2){}}}
 lockLand();document.addEventListener('pointerdown',lockLand,{once:true});
-dbg('page','1.8.1');cam();connect();
+function fitVideo(){
+  const v=$('#v'),w=$('#vw');
+  if(matchMedia('(orientation:portrait)').matches)v.style.cssText='position:absolute;left:50%;top:50%;width:'+w.clientHeight+'px;height:'+w.clientWidth+'px;transform:translate(-50%,-50%) rotate(-90deg)';
+  else v.style.cssText=''
+}
+addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
+dbg('page','1.8.2');cam();connect();
 </script></body></html>
