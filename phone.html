@@ -92,9 +92,9 @@ function connect(){
     conn.on('data',d=>{if(d&&d.t==='shoot')shoot()});
     conn.on('close',lost);conn.on('error',lost);
   });
-  peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable')status('PC introuvable : le QR code a expiré, scannez-le à nouveau','ko');else lost()});
+  peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,3000)}else lost()});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
 function lost(){ready();status('Connexion perdue, nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,2500)}
-cam();connect();
+dbg('page','1.6.2');cam();connect();
 </script></body></html>
