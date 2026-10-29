@@ -29,10 +29,13 @@ video{width:100%;height:100%;object-fit:cover;display:block}
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
-const id=(location.hash||'').replace(/^#/,'').replace(/[^A-Za-z0-9_-]/g,'');
+const hs=(location.hash||'').replace(/^#/,'').split('.');
+const id=(hs[0]||'').replace(/[^A-Za-z0-9_-]/g,'');
+let cred=null;try{const t=atob((hs[1]||'').replace(/-/g,'+').replace(/_/g,'/')).split(':');if(t.length===2)cred={username:t[0],credential:t[1]}}catch(e){}
+const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.relay.metered.ca:80'}].concat(cred?[{urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'],...cred}]:[]);
 let conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
 function dbg(k,v){why[k]=v;$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')}
-const MAXW=2560,Q=.88;
+const MAXW=1920,Q=.82;
 function status(t,k){$('#stt').textContent=t;$('#dot').className=k||''}
 function msg(t){const m=$('#msg');m.textContent=t||'';m.style.display=t?'flex':'none'}
 function ready(){$('#shut').disabled=!(conn&&conn.open)}
@@ -78,7 +81,7 @@ function connect(){
   if(!id){status('Lien invalide : scannez à nouveau le QR code','ko');return}
   clearTimeout(retry);status('Connexion au PC…');
   if(peer)try{peer.destroy()}catch(e){}
-  peer=new Peer();dbg('signal','…');
+  peer=new Peer({config:{iceServers:ICE}});dbg('signal','…');dbg('relais',cred?'oui':'non');
   peer.on('open',()=>{
     dbg('signal','ok');
     conn=peer.connect(id,{serialization:'binary',reliable:true});
