@@ -10,6 +10,10 @@ body{display:flex;flex-direction:column;overscroll-behavior:none}
 #tg{padding:8px 14px;background:#10331f;color:#c9f5d9;font-size:15px;font-weight:600;border-bottom:1px solid #1f6b3e;display:none}
 #tg.none{background:#2a2410;color:#f5e3a4;border-color:#6b5a1f;font-weight:500}
 #tg small{display:block;font-weight:400;opacity:.8;font-size:12px}
+#tg .chk{display:flex;gap:14px;margin-top:6px;font-size:13px;font-weight:600}
+#tg .chk span{opacity:.55}#tg .chk span.ok{opacity:1;color:#7bf0a5}#tg .chk span.nx{opacity:1;color:#fff;text-decoration:underline}
+#tg .nxb{margin-top:8px;background:none;border:1px solid #3a7a52;color:#c9f5d9;border-radius:6px;padding:6px 10px;font-size:13px}
+#tg.warn{background:#3a1414;color:#ffb4b4;border-color:#7a2a2a}
 #st{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;font-size:14px;display:flex;align-items:center;gap:8px;background:#16181c;border-bottom:1px solid #2a2d33}
 #dot{width:10px;height:10px;border-radius:50%;background:#e0a100;flex:none}
 #dot.ok{background:#3ecf6a}#dot.ko{background:#e5484d}
@@ -37,14 +41,20 @@ const hs=(location.hash||'').replace(/^#/,'').split('.');
 const id=(hs[0]||'').replace(/[^A-Za-z0-9_-]/g,'');
 let cred=null;try{const t=atob((hs[1]||'').replace(/-/g,'+').replace(/_/g,'/')).split(':');if(t.length===2)cred={username:t[0],credential:t[1]}}catch(e){}
 const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.relay.metered.ca:80'}].concat(cred?[{urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'],...cred}]:[]);
-let target={rid:'',label:'',phase:''},okT=null,conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
+let target={rid:'',label:'',phase:'',j:false,o:false,fin:false},okT=null,conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
 function dbg(k,v){why[k]=v;$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')}
 const MAXW=1920,Q=.82;
 function status(t,k){$('#stt').textContent=t;$('#dot').className=k||''}
 function msg(t){const m=$('#msg');m.textContent=t||'';m.style.display=t?'flex':'none'}
 function tgShow(){
   const e=$('#tg');e.style.display=conn&&conn.open?'block':'none';
-  if(target.rid){e.className='';e.innerHTML='Photo pour : '+esc(target.label)+(target.phase?'<small>'+esc(target.phase)+'</small>':'')}
+  if(target.fin){e.className='';e.innerHTML='Phase terminée ✔<small>Choisissez une autre étape sur le PC</small>'}
+  else if(target.rid){e.className='';
+    const nx=!target.j?'j':!target.o?'o':'';
+    e.innerHTML='Photo pour : '+esc(target.label)+(target.phase?'<small>'+esc(target.phase)+'</small>':'')
+      +'<div class="chk"><span class="'+(target.j?'ok':nx==='j'?'nx':'')+'">'+(target.j?'✔':'①')+' Page Jacking</span><span class="'+(target.o?'ok':nx==='o'?'nx':'')+'">'+(target.o?'✔':'②')+' Page Overview</span></div>'
+      +'<button class="nxb" id="nxb" type="button">Étape suivante ›</button>';
+    const b=$('#nxb');if(b)b.onclick=()=>{if(conn&&conn.open)conn.send({t:'next'})}}
   else{e.className='none';e.innerHTML='Aucune étape choisie<small>Photo seule : choisissez une étape sur le PC pour l’analyser</small>'}
 }
 const esc=x=>String(x||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -102,7 +112,8 @@ function connect(){
     conn.on('open',()=>{clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
     conn.on('data',d=>{if(!d)return;
       if(d.t==='shoot')shoot(d.rid);
-      else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||''};tgShow()}
+      else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin};tgShow()}
+      else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
       else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='Photo enregistrée ✔'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
     conn.on('close',lost);conn.on('error',lost);
   });
@@ -110,5 +121,5 @@ function connect(){
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
 function lost(){ready();status('Connexion perdue, nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,2500)}
-dbg('page','1.7.1');cam();connect();
+dbg('page','1.7.2');cam();connect();
 </script></body></html>
