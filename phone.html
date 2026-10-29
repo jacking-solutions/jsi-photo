@@ -83,7 +83,8 @@ function connect(){
     dbg('signal','ok');
     conn=peer.connect(id,{serialization:'binary',reliable:true});
     clearTimeout(tmo);tmo=setTimeout(()=>{if(!(conn&&conn.open)){status('Pas de réponse du PC : réseau bloqué ? (même Wi-Fi, pas de réseau invités)','ko');dbg('ice',conn&&conn.peerConnection?conn.peerConnection.iceConnectionState:'?')}},20000);
-    const pc=conn.peerConnection;if(pc)pc.addEventListener('iceconnectionstatechange',()=>dbg('ice',pc.iceConnectionState));
+    const pc=conn.peerConnection;if(pc){pc.addEventListener('iceconnectionstatechange',()=>dbg('ice',pc.iceConnectionState));
+      const n={host:0,srflx:0,relay:0};pc.addEventListener('icecandidate',e=>{const c=e.candidate;if(!c)return;n[c.type]=(n[c.type]||0)+1;dbg('cand','h'+n.host+' s'+n.srflx+' r'+n.relay+(/\.local/.test(c.address||c.candidate)?' mdns':''))})}
     conn.on('open',()=>{clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
     conn.on('data',d=>{if(d&&d.t==='shoot')shoot()});
     conn.on('close',lost);conn.on('error',lost);
