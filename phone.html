@@ -97,23 +97,27 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 async function frameBlob(){
   /* photo native en pleine résolution quand le navigateur la propose (bien plus nette qu'une image de la vidéo) */
-  if(imgCap&&imgCap.takePhoto){try{const b=await imgCap.takePhoto();if(b&&b.size)return await fileBlob(b)}catch(e){}}
+  if(imgCap&&imgCap.takePhoto){try{const b=await imgCap.takePhoto();if(b&&b.size)return await fileBlob(b,true)}catch(e){}}
   return videoBlob()
 }
 function videoBlob(){
   const v=$('#v');if(!stream||!v.videoWidth)return Promise.resolve(null);
-  const w=v.videoWidth,h=v.videoHeight,k=Math.min(1,MAXW/Math.max(w,h)),c=document.createElement('canvas');
-  /* téléphone tourné en paysage mais image de la caméra restée en portrait : on la remet droite */
+  return drawBlob(v,v.videoWidth,v.videoHeight,'video')
+}
+/* téléphone tourné en paysage mais image de la caméra restée en portrait : on la remet droite */
+function drawBlob(src,w,h,tag){
+  const k=Math.min(1,MAXW/Math.max(w,h)),c=document.createElement('canvas');
   const ang=((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0)+360)%360;
   const rot=(ang===90||ang===270)&&h>w?(ang===270?Math.PI/2:-Math.PI/2):0;
-  dbg('img',w+'x'+h+' ecran '+ang+' fen '+innerWidth+'x'+innerHeight+(rot?' rot':' sans-rot'));
+  dbg('img',tag+' '+w+'x'+h+' ecran '+ang+(rot?' rot':' sans-rot'));
   const cw=Math.round(w*k),ch=Math.round(h*k),x=c.getContext('2d');
-  if(rot){c.width=ch;c.height=cw;x.translate(c.width/2,c.height/2);x.rotate(rot);x.drawImage(v,-cw/2,-ch/2,cw,ch)}
-  else{c.width=cw;c.height=ch;x.drawImage(v,0,0,cw,ch)}
+  if(rot){c.width=ch;c.height=cw;x.translate(c.width/2,c.height/2);x.rotate(rot);x.drawImage(src,-cw/2,-ch/2,cw,ch)}
+  else{c.width=cw;c.height=ch;x.drawImage(src,0,0,cw,ch)}
   return new Promise(ok=>c.toBlob(ok,'image/jpeg',Q));
 }
-async function fileBlob(f){
+async function fileBlob(f,cam){
   const bmp=await createImageBitmap(f,{imageOrientation:'from-image'}).catch(()=>null);if(!bmp)return f;
+  if(cam)return drawBlob(bmp,bmp.width,bmp.height,'photo');
   const k=Math.min(1,MAXW/Math.max(bmp.width,bmp.height)),c=document.createElement('canvas');
   c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
   return new Promise(ok=>c.toBlob(ok,'image/jpeg',Q));
@@ -160,5 +164,5 @@ function lost(){
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
   status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
-dbg('page','1.7.8');cam();connect();
+dbg('page','1.7.9');cam();connect();
 </script></body></html>
