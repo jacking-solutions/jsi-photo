@@ -28,9 +28,18 @@ video{width:100%;height:100%;object-fit:cover;display:block}
 #alt{background:none;border:1px solid #3a3e46;color:#c6cad1;border-radius:6px;padding:9px 12px;font-size:13px}
 #dbg{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:#9aa0a9;background:rgba(0,0,0,.55);word-break:break-all}
 #cnt{font-size:13px;color:#9aa0a9;min-width:70px;text-align:center}
+#side{display:contents}
+/* paysage : vidéo en grand au centre, infos à gauche, déclencheur à droite */
+@media (orientation:landscape) and (max-height:560px){
+  body{display:grid;grid-template-columns:minmax(190px,32%) 1fr 104px;grid-template-rows:100%;height:100%}
+  #side{display:flex;flex-direction:column;overflow:auto;background:#16181c;padding-left:env(safe-area-inset-left)}
+  #st{padding-top:10px}
+  #vw{grid-column:2}
+  #bar{flex-direction:column;padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px;justify-content:center}
+}
 </style></head><body>
-<div id="st"><span id="dot"></span><span id="stt">Connexion…</span></div>
-<div id="tg"></div>
+<div id="side"><div id="st"><span id="dot"></span><span id="stt">Connexion…</span></div>
+<div id="tg"></div></div>
 <div id="vw"><video id="v" playsinline muted autoplay></video><div id="flash"></div><div id="dbg"></div><div id="msg">Ouverture de l’appareil photo…</div></div>
 <div id="bar"><button id="alt" type="button" hidden>Appareil photo du téléphone</button><button id="shut" type="button" aria-label="Prendre la photo" disabled></button><span id="cnt"></span></div>
 <input id="fi" type="file" accept="image/*" capture="environment" hidden>
@@ -64,6 +73,16 @@ function ready(){tgShow();$('#shut').disabled=!(conn&&conn.open)}
 async function cam(){
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:4096},height:{ideal:2160}},audio:false});
+    /* évite l'objectif ultra grand-angle : on préfère l'appareil arrière principal */
+    try{
+      const cur=stream.getVideoTracks()[0],ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+      const bad=/ultra|wide|grand|0\.5/i,back=/back|rear|arri|environment/i;
+      dbg('cam',(cur.label||'?').slice(0,28));
+      if(bad.test(cur.label||'')){
+        const alt=ds.find(d=>back.test(d.label)&&!bad.test(d.label));
+        if(alt){stream.getTracks().forEach(x=>x.stop());stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:alt.deviceId},width:{ideal:4096},height:{ideal:2160}},audio:false});dbg('cam',(alt.label||'?').slice(0,28))}
+      }
+    }catch(e){}
     const v=$('#v');v.srcObject=stream;await v.play().catch(()=>{});msg('');
     const tr=stream.getVideoTracks()[0];
     try{await tr.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
@@ -135,5 +154,5 @@ function lost(){
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
   status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
-dbg('page','1.7.4');cam();connect();
+dbg('page','1.7.5');cam();connect();
 </script></body></html>
