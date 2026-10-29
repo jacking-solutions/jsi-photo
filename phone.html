@@ -43,7 +43,8 @@ let cred=null;try{const t=atob((hs[1]||'').replace(/-/g,'+').replace(/_/g,'/')).
 const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.relay.metered.ca:80'}].concat(cred?[{urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'],...cred}]:[]);
 let target={rid:'',label:'',phase:'',j:false,o:false,fin:false},okT=null,conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
 function dbg(k,v){why[k]=v;$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')}
-const MAXW=1920,Q=.82;
+const MAXW=2560,Q=.9;
+let imgCap=null;
 function status(t,k){$('#stt').textContent=t;$('#dot').className=k||''}
 function msg(t){const m=$('#msg');m.textContent=t||'';m.style.display=t?'flex':'none'}
 function tgShow(){
@@ -62,8 +63,11 @@ function ready(){tgShow();$('#shut').disabled=!(conn&&conn.open)}
 
 async function cam(){
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:MAXW},height:{ideal:1440}},audio:false});
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:4096},height:{ideal:2160}},audio:false});
     const v=$('#v');v.srcObject=stream;await v.play().catch(()=>{});msg('');
+    const tr=stream.getVideoTracks()[0];
+    try{await tr.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+    try{if(window.ImageCapture)imgCap=new ImageCapture(tr)}catch(e){}
   }catch(e){
     msg('Appareil photo bloqué dans le navigateur. Autorisez la caméra pour ce site, ou utilisez le bouton ci-dessous.');
     $('#alt').hidden=false;
@@ -72,7 +76,12 @@ async function cam(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})});
 
-function frameBlob(){
+async function frameBlob(){
+  /* photo native en pleine résolution quand le navigateur la propose (bien plus nette qu'une image de la vidéo) */
+  if(imgCap&&imgCap.takePhoto){try{const b=await imgCap.takePhoto();if(b&&b.size)return await fileBlob(b)}catch(e){}}
+  return videoBlob()
+}
+function videoBlob(){
   const v=$('#v');if(!stream||!v.videoWidth)return Promise.resolve(null);
   const w=v.videoWidth,h=v.videoHeight,k=Math.min(1,MAXW/Math.max(w,h)),c=document.createElement('canvas');
   c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);
@@ -121,5 +130,5 @@ function connect(){
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
 function lost(){ready();status('Connexion perdue, nouvelle tentative…','ko');clearTimeout(retry);retry=setTimeout(connect,2500)}
-dbg('page','1.7.2');cam();connect();
+dbg('page','1.7.3');cam();connect();
 </script></body></html>
