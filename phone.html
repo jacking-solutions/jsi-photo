@@ -225,7 +225,7 @@ $('#fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f){co
 function connect(){
   if(!id){status('Lien invalide : scannez à nouveau le QR code','ko');return}
   clearTimeout(retry);status('Connexion au PC…');connT=Date.now();
-  if(peer)try{peer.destroy()}catch(e){}
+  const gn=++gen;if(peer)try{peer.destroy()}catch(e){}
   peer=new Peer({config:{iceServers:ICE}});dbg('signal','…');dbg('relais',cred?'oui':'non');
   peer.on('open',()=>{
     dbg('signal','ok');lg('signal ouvert');
@@ -239,14 +239,14 @@ function connect(){
       else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin,tide:!!d.tide};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
       else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée '+icon('check')+'</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
-    conn.on('close',()=>{lg('connexion fermée');lost('fermée')});conn.on('error',e=>{lg('connexion erreur '+(e&&(e.type||e.message)||''));lost('erreur '+(e&&(e.type||e.message)||''))});
+    conn.on('close',()=>{if(gn!==gen)return;lg('connexion fermée');lost('fermée')});conn.on('error',e=>{if(gn!==gen)return;lg('connexion erreur '+(e&&(e.type||e.message)||''));lost('erreur '+(e&&(e.type||e.message)||''))});
   });
-  peer.on('error',e=>{dbg('err',e&&e.type||e);lg('serveur erreur '+(e&&e.type||e));if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost('serveur '+(e&&e.type||e))});
-  peer.on('disconnected',()=>{lg('serveur déconnecté, reconnexion');try{peer.reconnect()}catch(e){}});
+  peer.on('error',e=>{if(gn!==gen)return;dbg('err',e&&e.type||e);lg('serveur erreur '+(e&&e.type||e));if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost('serveur '+(e&&e.type||e))});
+  peer.on('disconnected',()=>{if(gn!==gen)return;lg('serveur déconnecté, reconnexion');try{peer.reconnect()}catch(e){}});
 }
-let fails=0,lastRx=0,hasPong=false,connT=0;
+let fails=0,lastRx=0,hasPong=false,connT=0,gen=0;
 /* signaux de vie : le PC répond « pong » ; sans réponse pendant 25 s la connexion est refaite (seulement si le PC sait répondre) */
-function dead(){lg('silence du PC '+Math.round((Date.now()-lastRx)/1000)+'s : connexion refaite');try{conn&&conn.close()}catch(e){}ready();lost('silence du PC')}
+function dead(){lg('silence du PC '+Math.round((Date.now()-lastRx)/1000)+'s : connexion refaite');gen++;try{conn&&conn.close()}catch(e){}ready();lost('silence du PC')}
 let tk=Date.now();
 setInterval(()=>{const g=Date.now()-tk;tk=Date.now();if(g>12000)lg('minuterie en retard de '+Math.round(g/1000)+'s (page ralentie ou veille)');if(!(conn&&conn.open))return;try{conn.send({t:'ping'})}catch(e){}if(hasPong&&Date.now()-lastRx>25000)dead()},8000);
 document.addEventListener('visibilitychange',()=>{
@@ -274,5 +274,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.9');$('#ver').textContent='v1.9.9';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.10');$('#ver').textContent='v1.9.10';cam();connect();
 </script></body></html>
