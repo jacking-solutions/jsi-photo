@@ -171,14 +171,16 @@ function drawBlob(src,w,h,tag){
   const ang=((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0)+360)%360;
   /* image de la caméra en portrait alors que l'interface est en paysage (et pas en mode « table des marées ») : on la remet droite.
      Sens : celui de l'angle de l'écran ; si le navigateur ne le donne pas (angle 0 en paysage), le sens habituel (haut de l'écran à gauche). */
-  const land=innerWidth>innerHeight&&!document.documentElement.classList.contains('tide');
-  const rot=h>w?((ang===90||ang===270)?(ang===270?Math.PI/2:-Math.PI/2):(land?-Math.PI/2:0)):0;
+  /* hors « table des marées », l'interface s'affiche toujours en paysage (tournée par la page si le téléphone est resté en portrait, verrouillage de rotation) :
+     on tient donc le téléphone en paysage et la photo, reçue en portrait, est tournée dans le sens de l'angle (par défaut : haut de l'écran à gauche). */
+  const tideMode=document.documentElement.classList.contains('tide');
+  const rot=(h>w&&!tideMode)?(ang===270?Math.PI/2:-Math.PI/2):0;
   dbg('img',tag+' '+w+'x'+h+' ecran '+ang+' fen '+innerWidth+'x'+innerHeight+(rot?' rot':' sans-rot'));
   const cw=Math.round(w*k),ch=Math.round(h*k),x=c.getContext('2d');
   if(rot){c.width=ch;c.height=cw;x.translate(c.width/2,c.height/2);x.rotate(rot);x.drawImage(src,-cw/2,-ch/2,cw,ch)}
   else{c.width=cw;c.height=ch;x.drawImage(src,0,0,cw,ch)}
   /* TEMPORAIRE (diagnostic de la rotation) : bandeau écrit dans l'image */
-  {const s='v1.9.2 '+tag+' '+w+'x'+h+' ang'+ang+' fen'+innerWidth+'x'+innerHeight+' '+(rot?'ROT':'noROT')+(document.documentElement.classList.contains('tide')?' tide':'');
+  {const s='v1.9.3 '+tag+' '+w+'x'+h+' ang'+ang+' fen'+innerWidth+'x'+innerHeight+' '+(rot?'ROT':'noROT')+(document.documentElement.classList.contains('tide')?' tide':'');
    x.save();x.setTransform(1,0,0,1,0,0);x.fillStyle='#000';x.fillRect(0,0,c.width,46);x.fillStyle='#fff';x.font='28px monospace';x.fillText(s,10,34);x.restore()}
   return new Promise(ok=>c.toBlob(ok,'image/jpeg',Q));
 }
@@ -258,5 +260,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.2');$('#ver').textContent='v1.9.2';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.3');$('#ver').textContent='v1.9.3';cam();connect();
 </script></body></html>
