@@ -220,7 +220,7 @@ $('#fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f){co
 
 function connect(){
   if(!id){status('Lien invalide : scannez à nouveau le QR code','ko');return}
-  clearTimeout(retry);status('Connexion au PC…');
+  clearTimeout(retry);status('Connexion au PC…');connT=Date.now();
   if(peer)try{peer.destroy()}catch(e){}
   peer=new Peer({config:{iceServers:ICE}});dbg('signal','…');dbg('relais',cred?'oui':'non');
   peer.on('open',()=>{
@@ -235,24 +235,24 @@ function connect(){
       else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin,tide:!!d.tide};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
       else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée '+icon('check')+'</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
-    conn.on('close',lost);conn.on('error',lost);
+    conn.on('close',()=>lost('fermée'));conn.on('error',e=>lost('erreur '+(e&&(e.type||e.message)||'')));
   });
-  peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost()});
+  peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost('serveur '+(e&&e.type||e))});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
-let fails=0,lastRx=0,hasPong=false;
+let fails=0,lastRx=0,hasPong=false,connT=0;
 /* signaux de vie : le PC répond « pong » ; sans réponse pendant 25 s la connexion est refaite (seulement si le PC sait répondre) */
-function dead(){try{conn&&conn.close()}catch(e){}ready();lost()}
+function dead(){try{conn&&conn.close()}catch(e){}ready();lost('silence du PC')}
 setInterval(()=>{if(!(conn&&conn.open))return;try{conn.send({t:'ping'})}catch(e){}if(hasPong&&Date.now()-lastRx>25000)dead()},8000);
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
   if(conn&&conn.open){const t0=Date.now();try{conn.send({t:'ping'})}catch(e){}setTimeout(()=>{if(hasPong&&lastRx<t0)dead()},6000)}
-  else if(id){fails=0;clearTimeout(retry);connect()}
+  else if(id&&!(conn&&!conn.open&&Date.now()-connT<20000)){fails=0;clearTimeout(retry);connect()}
 });
-function lost(){
-  ready();clearTimeout(retry);
+function lost(why){
+  ready();clearTimeout(retry);dbg('perdu',why||'?');
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
-  status('Connexion perdue, nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
+  status('Connexion perdue'+(why?' ('+why+')':'')+', nouvelle tentative…','ko');retry=setTimeout(connect,Math.min(60000,2500*Math.pow(2,fails++)))
 }
 /* paysage imposé : verrouillage quand le navigateur le permet (Android) ; sinon l'interface est tournée par le CSS et l'aperçu caméra remis à l'endroit ici */
 async function lockLand(){
@@ -268,5 +268,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.6');$('#ver').textContent='v1.9.6';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.7');$('#ver').textContent='v1.9.7';cam();connect();
 </script></body></html>
