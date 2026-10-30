@@ -169,8 +169,11 @@ function videoBlob(){
 function drawBlob(src,w,h,tag){
   const k=Math.min(1,MAXW/Math.max(w,h)),c=document.createElement('canvas');
   const ang=((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0)+360)%360;
-  const rot=(ang===90||ang===270)&&h>w?(ang===270?Math.PI/2:-Math.PI/2):0;
-  dbg('img',tag+' '+w+'x'+h+' ecran '+ang+(rot?' rot':' sans-rot'));
+  /* image de la caméra en portrait alors que l'interface est en paysage (et pas en mode « table des marées ») : on la remet droite.
+     Sens : celui de l'angle de l'écran ; si le navigateur ne le donne pas (angle 0 en paysage), le sens habituel (haut de l'écran à gauche). */
+  const land=innerWidth>innerHeight&&!document.documentElement.classList.contains('tide');
+  const rot=h>w?((ang===90||ang===270)?(ang===270?Math.PI/2:-Math.PI/2):(land?-Math.PI/2:0)):0;
+  dbg('img',tag+' '+w+'x'+h+' ecran '+ang+' fen '+innerWidth+'x'+innerHeight+(rot?' rot':' sans-rot'));
   const cw=Math.round(w*k),ch=Math.round(h*k),x=c.getContext('2d');
   if(rot){c.width=ch;c.height=cw;x.translate(c.width/2,c.height/2);x.rotate(rot);x.drawImage(src,-cw/2,-ch/2,cw,ch)}
   else{c.width=cw;c.height=ch;x.drawImage(src,0,0,cw,ch)}
@@ -252,5 +255,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-navIcons();bkUi();dbg('page','1.9.0');$('#ver').textContent='v1.9.0';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.1');$('#ver').textContent='v1.9.1';cam();connect();
 </script></body></html>
