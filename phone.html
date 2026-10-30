@@ -226,8 +226,8 @@ function connect(){
     clearTimeout(tmo);tmo=setTimeout(()=>{if(!(conn&&conn.open)){status('Pas de réponse du PC : réseau bloqué ? (même Wi-Fi, pas de réseau invités)','ko');dbg('ice',conn&&conn.peerConnection?conn.peerConnection.iceConnectionState:'?')}},20000);
     const pc=conn.peerConnection;if(pc){pc.addEventListener('iceconnectionstatechange',()=>dbg('ice',pc.iceConnectionState));
       const n={host:0,srflx:0,relay:0};pc.addEventListener('icecandidate',e=>{const c=e.candidate;if(!c)return;n[c.type]=(n[c.type]||0)+1;dbg('cand','h'+n.host+' s'+n.srflx+' r'+n.relay+(/\.local/.test(c.address||c.candidate)?' mdns':''))})}
-    conn.on('open',()=>{fails=0;clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
-    conn.on('data',d=>{if(!d)return;
+    conn.on('open',()=>{lastRx=Date.now();hasPong=false;fails=0;clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
+    conn.on('data',d=>{if(!d)return;lastRx=Date.now();if(d.t==='pong'){hasPong=true;return}
       if(d.t==='shoot')shoot(d.rid);
       else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin,tide:!!d.tide};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
@@ -237,7 +237,15 @@ function connect(){
   peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost()});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
-let fails=0;
+let fails=0,lastRx=0,hasPong=false;
+/* signaux de vie : le PC répond « pong » ; sans réponse pendant 25 s la connexion est refaite (seulement si le PC sait répondre) */
+function dead(){try{conn&&conn.close()}catch(e){}ready();lost()}
+setInterval(()=>{if(!(conn&&conn.open))return;try{conn.send({t:'ping'})}catch(e){}if(hasPong&&Date.now()-lastRx>25000)dead()},8000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  if(conn&&conn.open){const t0=Date.now();try{conn.send({t:'ping'})}catch(e){}setTimeout(()=>{if(hasPong&&lastRx<t0)dead()},6000)}
+  else if(id){fails=0;clearTimeout(retry);connect()}
+});
 function lost(){
   ready();clearTimeout(retry);
   if(fails>=8){status('Serveur de connexion indisponible ou trop sollicité : réessayez dans quelques minutes (scannez un nouveau QR code)','ko');return}
@@ -257,5 +265,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.4');$('#ver').textContent='v1.9.4';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.5');$('#ver').textContent='v1.9.5';cam();connect();
 </script></body></html>
