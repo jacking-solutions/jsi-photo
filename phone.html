@@ -23,6 +23,7 @@ body{position:fixed;inset:0;height:auto}
 #tg{padding:6px 12px;background:var(--panel-2);color:var(--ink);font-size:13px;border-bottom:1px solid var(--line);border-left:4px solid var(--accent);display:none;align-items:center;flex-wrap:wrap;gap:2px 14px}
 #tg b.t{font-family:var(--f-display);font-size:17px;font-weight:600;line-height:1.15}
 #tg.none{border-left-color:var(--line-2)}
+#tg.tide{border-left-color:var(--nav);background:var(--st-new-bg)}
 #tg small{color:var(--ink-2);font-size:12px}
 #tg .chk{display:flex;gap:14px;margin-left:auto;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 #tg .chk i.num{display:inline-block;min-width:16px;height:16px;border:1px solid currentColor;border-radius:8px;font:600 10px/14px var(--f-body);font-style:normal;text-align:center;vertical-align:1px}
@@ -67,6 +68,10 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 body{display:grid;grid-template-columns:1fr 96px;grid-template-rows:100%}
 #main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
 #bar{padding:14px calc(10px + env(safe-area-inset-right)) 14px 10px}
+/* photo de la table des marées : prise en portrait, interface non tournée */
+html.tide body{display:flex;flex-direction:column;position:fixed;inset:0;width:auto;height:auto;transform:none}
+html.tide #main{flex:1;min-height:0}
+html.tide #bar{flex-direction:row;justify-content:center;padding:10px}
 @media (orientation:portrait){
   body{position:fixed;top:0;left:0;width:100vh;height:100vw;width:100dvh;height:100dvw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg);transform:translateX(100dvw) rotate(90deg)}
 }
@@ -97,7 +102,9 @@ function navIcons(){$('#pvb').innerHTML=icon('chevron-right','flip')+' Précéde
 function tgShow(){
   const e=$('#tg');e.style.display=conn&&conn.open?'flex':'none';
   const nav='';
-  if(target.fin){e.className='';e.innerHTML='<b class="t">Phase terminée '+icon('check')+'</b><small>Choisissez une autre étape sur le PC</small>'+nav}
+  document.documentElement.classList.toggle('tide',!!target.tide);fitVideo();
+  if(target.tide){e.className='tide';e.innerHTML='<b class="t">'+esc(target.label)+'</b><div class="chk"><span class="nx">Photo en portrait</span></div>'}
+  else if(target.fin){e.className='';e.innerHTML='<b class="t">Phase terminée '+icon('check')+'</b><small>Choisissez une autre étape sur le PC</small>'+nav}
   else if(target.rid){e.className='';
     const nx=!target.j?'j':!target.o?'o':'';
     e.innerHTML='<b class="t">'+esc(target.label)+'</b>'+(target.phase?'<small>'+esc(target.phase)+'</small>':'')
@@ -217,7 +224,7 @@ function connect(){
     conn.on('open',()=>{fails=0;clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
     conn.on('data',d=>{if(!d)return;
       if(d.t==='shoot')shoot(d.rid);
-      else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin};tgShow()}
+      else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin,tide:!!d.tide};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
       else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée '+icon('check')+'</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
     conn.on('close',lost);conn.on('error',lost);
@@ -240,9 +247,10 @@ async function lockLand(){
 document.addEventListener('pointerdown',lockLand,{once:true});
 function fitVideo(){
   const v=$('#v'),w=$('#vw');
-  if(matchMedia('(orientation:portrait)').matches)v.style.cssText='position:absolute;left:50%;top:50%;width:'+w.clientHeight+'px;height:'+w.clientWidth+'px;transform:translate(-50%,-50%) rotate(-90deg)';
+  if(document.documentElement.classList.contains('tide'))v.style.cssText='';
+  else if(matchMedia('(orientation:portrait)').matches)v.style.cssText='position:absolute;left:50%;top:50%;width:'+w.clientHeight+'px;height:'+w.clientWidth+'px;transform:translate(-50%,-50%) rotate(-90deg)';
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-navIcons();bkUi();dbg('page','1.8.10');$('#ver').textContent='v1.8.10';cam();connect();
+navIcons();bkUi();dbg('page','1.9.0');$('#ver').textContent='v1.9.0';cam();connect();
 </script></body></html>
