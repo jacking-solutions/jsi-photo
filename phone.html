@@ -124,9 +124,10 @@ function pqShow(){
 }
 async function pqSend(){
   if(!pq.length)return;
-  if(!(conn&&conn.open)){status('PC non connecté','ko');return}
+  if(!(conn&&conn.open)){status('PC non connecté','ko');backupAll(pq.slice());return}
   const it=pq.splice(0);pqShow();
   for(const x of it){await send(x.b,x.rid);URL.revokeObjectURL(x.url)}
+  backupAll(it)
 }
 const esc=x=>String(x||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function ready(){tgShow();$('#shut').disabled=!(conn&&conn.open)}
@@ -201,14 +202,16 @@ function flash(){const f=$('#flash');f.style.opacity=.85;setTimeout(()=>f.style.
 let bkOn=true,bkN=0;try{bkOn=localStorage.getItem('jsiPhotoBackup')!=='0'}catch(e){}
 function bkUi(){const b=$('#bkb');b.textContent='Copie : '+(bkOn?'oui':'non');b.title=b.ariaLabel='Copie de secours sur le téléphone (Téléchargements) : '+(bkOn?'activée':'désactivée')}
 $('#bkb').onclick=()=>{bkOn=!bkOn;try{localStorage.setItem('jsiPhotoBackup',bkOn?'1':'0')}catch(e){}bkUi()};
-function backup(b){if(!bkOn||!b)return;try{const d=new Date(),z=n=>String(n).padStart(2,'0'),a=document.createElement('a'),lb=String(target.label||'').replace(/[^\w.-]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+function backup(b,label){if(!bkOn||!b)return;try{const d=new Date(),z=n=>String(n).padStart(2,'0'),a=document.createElement('a'),lb=String(label!=null?label:target.label||'').replace(/[^\w.-]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
   a.href=URL.createObjectURL(b);a.download='JSI-photo_'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'_'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+'_'+(++bkN)+(lb?'_'+lb:'')+'.jpg';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}catch(e){}}
-function stock(b,rid){pq.push({b,rid:rid||'',url:URL.createObjectURL(b)});flash();pqShow()}
+/* copie de secours : faite après l'envoi (et non à chaque photo) pour que le message de téléchargement du navigateur ne gêne pas les prises de vue */
+function backupAll(items){let i=0;const next=()=>{const x=items[i++];if(!x)return;if(!x.bk){x.bk=true;backup(x.b,x.label)}setTimeout(next,900)};next()}
+function stock(b,rid){pq.push({b,rid:rid||'',url:URL.createObjectURL(b),label:target.label||''});flash();pqShow()}
 /* demande du PC (ancien bouton) : envoi immédiat ; bouton du téléphone : la photo est gardée en attente */
-async function shoot(rid){pend=rid||'';const b=await frameBlob();if(b){backup(b);return send(b,pend)}if(!$('#alt').hidden)$('#fi').click()}
+async function shoot(rid){pend=rid||'';const b=await frameBlob();if(b){await send(b,pend);backup(b);return}if(!$('#alt').hidden)$('#fi').click()}
 async function take(){
   if(busy)return;busy=true;$('#shut').disabled=true;
-  try{const b=await frameBlob();if(b){stock(b,target.rid);backup(b)}else if(!$('#alt').hidden){pend=target.rid;$('#fi').click()}}finally{busy=false;ready()}
+  try{const b=await frameBlob();if(b){stock(b,target.rid)}else if(!$('#alt').hidden){pend=target.rid;$('#fi').click()}}finally{busy=false;ready()}
 }
 $('#shut').onclick=take;
 $('#pqgo').onclick=pqSend;
@@ -265,5 +268,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.5');$('#ver').textContent='v1.9.5';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.6');$('#ver').textContent='v1.9.6';cam();connect();
 </script></body></html>
