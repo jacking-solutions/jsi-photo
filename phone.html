@@ -62,7 +62,7 @@ video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #shut:active{transform:scale(.94)}
 #shut:disabled{opacity:.45}
 #alt{flex:none;width:100%}
-#dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:var(--ink-2);background:rgba(0,0,0,.55);word-break:break-all}
+#dbg{display:none;position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font:11px/1.35 monospace;color:var(--ink-2);background:rgba(0,0,0,.55);word-break:break-all;white-space:pre-wrap;max-height:70%;overflow:auto}
 #cnt{font-size:12px;color:var(--ink-2);text-align:center}
 /* interface toujours en paysage : si le téléphone est tenu en portrait, elle est tournée de 90° */
 body{display:grid;grid-template-columns:1fr 96px;grid-template-rows:100%}
@@ -93,7 +93,13 @@ const id=(hs[0]||'').replace(/[^A-Za-z0-9_-]/g,'');
 let cred=null;try{const t=atob((hs[1]||'').replace(/-/g,'+').replace(/_/g,'/')).split(':');if(t.length===2)cred={username:t[0],credential:t[1]}}catch(e){}
 const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.relay.metered.ca:80'}].concat(cred?[{urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'],...cred}]:[]);
 let target={rid:'',label:'',phase:'',j:false,o:false,fin:false},okT=null,conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
-function dbg(k,v){why[k]=v;$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')}
+const LOG=[],T0=Date.now();
+function dbgShow(){$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')+'
+'+LOG.join('
+')}
+function dbg(k,v){why[k]=v;dbgShow()}
+/* journal horodaté (secondes depuis l'ouverture de la page) : touchez la version pour l'afficher */
+function lg(m){LOG.push(Math.round((Date.now()-T0)/1000)+'s '+m);if(LOG.length>40)LOG.shift();dbgShow()}
 const MAXW=2560,Q=.9;
 let imgCap=null;
 function status(t,k){$('#stt').textContent=t;$('#dot').className=k||''}
@@ -153,7 +159,7 @@ async function cam(){
     msg('Appareil photo bloqué dans le navigateur. Autorisez la caméra pour ce site, ou utilisez le bouton ci-dessous.');
     $('#alt').hidden=false;
   }
-  try{if(navigator.wakeLock)await navigator.wakeLock.request('screen')}catch(e){}
+  try{if(navigator.wakeLock){const w=await navigator.wakeLock.request('screen');lg('écran maintenu allumé');w.addEventListener('release',()=>lg('verrou d'écran libéré'))}else lg('pas de verrou d'écran')}catch(e){lg('verrou d'écran refusé')}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})});
 
@@ -224,27 +230,29 @@ function connect(){
   if(peer)try{peer.destroy()}catch(e){}
   peer=new Peer({config:{iceServers:ICE}});dbg('signal','…');dbg('relais',cred?'oui':'non');
   peer.on('open',()=>{
-    dbg('signal','ok');
+    dbg('signal','ok');lg('signal ouvert');
     conn=peer.connect(id,{serialization:'binary',reliable:true});
     clearTimeout(tmo);tmo=setTimeout(()=>{if(!(conn&&conn.open)){status('Pas de réponse du PC : réseau bloqué ? (même Wi-Fi, pas de réseau invités)','ko');dbg('ice',conn&&conn.peerConnection?conn.peerConnection.iceConnectionState:'?')}},20000);
-    const pc=conn.peerConnection;if(pc){pc.addEventListener('iceconnectionstatechange',()=>dbg('ice',pc.iceConnectionState));
+    const pc=conn.peerConnection;if(pc){pc.addEventListener('iceconnectionstatechange',()=>{dbg('ice',pc.iceConnectionState);lg('ice '+pc.iceConnectionState)});
       const n={host:0,srflx:0,relay:0};pc.addEventListener('icecandidate',e=>{const c=e.candidate;if(!c)return;n[c.type]=(n[c.type]||0)+1;dbg('cand','h'+n.host+' s'+n.srflx+' r'+n.relay+(/\.local/.test(c.address||c.candidate)?' mdns':''))})}
-    conn.on('open',()=>{lastRx=Date.now();hasPong=false;fails=0;clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
+    conn.on('open',()=>{lg('connexion ouverte');lastRx=Date.now();hasPong=false;fails=0;clearTimeout(tmo);status('Connecté au PC','ok');ready();conn.send({t:'ready'})});
     conn.on('data',d=>{if(!d)return;lastRx=Date.now();if(d.t==='pong'){hasPong=true;return}
       if(d.t==='shoot')shoot(d.rid);
       else if(d.t==='target'){target={rid:d.rid||'',label:d.label||'',phase:d.phase||'',j:!!d.j,o:!!d.o,fin:!!d.fin,tide:!!d.tide};tgShow()}
       else if(d.t==='warn'){const e=$('#tg');e.className='warn';e.innerHTML=esc(d.msg||'Photo non lisible');clearTimeout(okT);okT=setTimeout(tgShow,3500)}
       else if(d.t==='saved'){const e=$('#tg');e.className='';e.innerHTML='<b class="t">Photo enregistrée '+icon('check')+'</b>'+(target.rid?'<small>'+esc(target.label)+'</small>':'');clearTimeout(okT);okT=setTimeout(tgShow,3500)}});
-    conn.on('close',()=>lost('fermée'));conn.on('error',e=>lost('erreur '+(e&&(e.type||e.message)||'')));
+    conn.on('close',()=>{lg('connexion fermée');lost('fermée')});conn.on('error',e=>{lg('connexion erreur '+(e&&(e.type||e.message)||''));lost('erreur '+(e&&(e.type||e.message)||''))});
   });
-  peer.on('error',e=>{dbg('err',e&&e.type||e);if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost('serveur '+(e&&e.type||e))});
-  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',e=>{dbg('err',e&&e.type||e);lg('serveur erreur '+(e&&e.type||e));if(e&&e.type==='peer-unavailable'){status('PC introuvable (QR code périmé ?) : nouvelle tentative…','ko');clearTimeout(retry);if(fails<8)retry=setTimeout(connect,Math.min(60000,3000*Math.pow(2,fails++)))}else lost('serveur '+(e&&e.type||e))});
+  peer.on('disconnected',()=>{lg('serveur déconnecté, reconnexion');try{peer.reconnect()}catch(e){}});
 }
 let fails=0,lastRx=0,hasPong=false,connT=0;
 /* signaux de vie : le PC répond « pong » ; sans réponse pendant 25 s la connexion est refaite (seulement si le PC sait répondre) */
-function dead(){try{conn&&conn.close()}catch(e){}ready();lost('silence du PC')}
-setInterval(()=>{if(!(conn&&conn.open))return;try{conn.send({t:'ping'})}catch(e){}if(hasPong&&Date.now()-lastRx>25000)dead()},8000);
+function dead(){lg('silence du PC '+Math.round((Date.now()-lastRx)/1000)+'s : connexion refaite');try{conn&&conn.close()}catch(e){}ready();lost('silence du PC')}
+let tk=Date.now();
+setInterval(()=>{const g=Date.now()-tk;tk=Date.now();if(g>12000)lg('minuterie en retard de '+Math.round(g/1000)+'s (page ralentie ou veille)');if(!(conn&&conn.open))return;try{conn.send({t:'ping'})}catch(e){}if(hasPong&&Date.now()-lastRx>25000)dead()},8000);
 document.addEventListener('visibilitychange',()=>{
+  lg('page '+document.visibilityState+(conn&&conn.open?', dernier signal du PC il y a '+Math.round((Date.now()-lastRx)/1000)+'s':''));
   if(document.visibilityState!=='visible')return;
   if(conn&&conn.open){const t0=Date.now();try{conn.send({t:'ping'})}catch(e){}setTimeout(()=>{if(hasPong&&lastRx<t0)dead()},6000)}
   else if(id&&!(conn&&!conn.open&&Date.now()-connT<20000)){fails=0;clearTimeout(retry);connect()}
@@ -268,5 +276,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.7');$('#ver').textContent='v1.9.7';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.8');$('#ver').textContent='v1.9.8';cam();connect();
 </script></body></html>
