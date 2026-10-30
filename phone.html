@@ -94,9 +94,7 @@ let cred=null;try{const t=atob((hs[1]||'').replace(/-/g,'+').replace(/_/g,'/')).
 const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.relay.metered.ca:80'}].concat(cred?[{urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'],...cred}]:[]);
 let target={rid:'',label:'',phase:'',j:false,o:false,fin:false},okT=null,conn=null,peer=null,stream=null,sent=0,retry=null,tmo=null,why={};
 const LOG=[],T0=Date.now();
-function dbgShow(){$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')+'
-'+LOG.join('
-')}
+function dbgShow(){$('#dbg').textContent=Object.entries(why).map(([a,b])=>a+':'+b).join(' · ')+'\n'+LOG.join('\n')}
 function dbg(k,v){why[k]=v;dbgShow()}
 /* journal horodaté (secondes depuis l'ouverture de la page) : touchez la version pour l'afficher */
 function lg(m){LOG.push(Math.round((Date.now()-T0)/1000)+'s '+m);if(LOG.length>40)LOG.shift();dbgShow()}
@@ -159,7 +157,7 @@ async function cam(){
     msg('Appareil photo bloqué dans le navigateur. Autorisez la caméra pour ce site, ou utilisez le bouton ci-dessous.');
     $('#alt').hidden=false;
   }
-  try{if(navigator.wakeLock){const w=await navigator.wakeLock.request('screen');lg('écran maintenu allumé');w.addEventListener('release',()=>lg('verrou d'écran libéré'))}else lg('pas de verrou d'écran')}catch(e){lg('verrou d'écran refusé')}
+  try{if(navigator.wakeLock){const w=await navigator.wakeLock.request('screen');lg('écran maintenu allumé');w.addEventListener('release',()=>lg('verrou d\'écran libéré'))}else lg('pas de verrou d\'écran')}catch(e){lg('verrou d\'écran refusé')}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})});
 
@@ -276,5 +274,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.8');$('#ver').textContent='v1.9.8';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.9');$('#ver').textContent='v1.9.9';cam();connect();
 </script></body></html>
