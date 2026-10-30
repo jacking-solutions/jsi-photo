@@ -179,9 +179,6 @@ function drawBlob(src,w,h,tag){
   const cw=Math.round(w*k),ch=Math.round(h*k),x=c.getContext('2d');
   if(rot){c.width=ch;c.height=cw;x.translate(c.width/2,c.height/2);x.rotate(rot);x.drawImage(src,-cw/2,-ch/2,cw,ch)}
   else{c.width=cw;c.height=ch;x.drawImage(src,0,0,cw,ch)}
-  /* TEMPORAIRE (diagnostic de la rotation) : bandeau écrit dans l'image */
-  {const s='v1.9.3 '+tag+' '+w+'x'+h+' ang'+ang+' fen'+innerWidth+'x'+innerHeight+' '+(rot?'ROT':'noROT')+(document.documentElement.classList.contains('tide')?' tide':'');
-   x.save();x.setTransform(1,0,0,1,0,0);x.fillStyle='#000';x.fillRect(0,0,c.width,46);x.fillStyle='#fff';x.font='28px monospace';x.fillText(s,10,34);x.restore()}
   return new Promise(ok=>c.toBlob(ok,'image/jpeg',Q));
 }
 async function fileBlob(f,cam){
@@ -260,5 +257,5 @@ function fitVideo(){
   else v.style.cssText=''
 }
 addEventListener('resize',fitVideo);addEventListener('orientationchange',()=>setTimeout(fitVideo,150));setTimeout(fitVideo,0);
-$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.3');$('#ver').textContent='v1.9.3';cam();connect();
+$('#ver').onclick=()=>{const d=$('#dbg');d.style.display=d.style.display==='block'?'none':'block'};navIcons();bkUi();dbg('page','1.9.4');$('#ver').textContent='v1.9.4';cam();connect();
 </script></body></html>
